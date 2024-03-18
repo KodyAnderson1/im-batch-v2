@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  inventorymanagerDB:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: railway
+    ports:
+      - "3306:3306"
+    volumes:
+      - my-db:/var/lib/mysql
+
+  # redis:
+  #   image: redis
+  #   ports:
+  #     - "6379:6379"
+
+volumes:
+  my-db:
