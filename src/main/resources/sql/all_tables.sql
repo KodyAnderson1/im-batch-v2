@@ -1,130 +1,186 @@
-CREATE TABLE `categories` (
-    `id`            int          NOT NULL AUTO_INCREMENT,
-    `name`          varchar(255) NOT NULL,
-    `icon`          enum('CUP_SODA','COFFEE','THERMOMETER_SNOWFLAKE','APPLE','BANANA','BEEF','CANDY','CARROT','COOKIE','CROISSANT','UTENSILS','FISH','BEER','CAKE','CITRUS','EGG','VEGAN','HOME','BLINDS','LAMP','WAREHOUSE','TOWER_CONTROL','FIRE_EXTINGUISHER','HAND','KEYBOARD','HAMMER','HEATER','MICROWAVE','REFRIGERATOR','WASHING_MACHINE','WRENCH','BOOK_A','TV','NOTEPAD','SPRAY_CAN','POPCORN','LOLLIPOP','PIZZA','WHEAT','GLASS_WATER','HOP','DESSERT','ICE_CREAM','NUT','SALAD','SANDWICH','SOUP','MILK','WINE') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'UTENSILS',
-    `icon_color`    enum('RED','ORANGE','YELLOW','EMERALD','GREEN','TEAL','BLUE','SKY','VIOLET','PURPLE','PINK','STONE','GREY','BLACK','WHITE','ROSE') NOT NULL DEFAULT 'EMERALD',
-    `user_id`       varchar(255) NOT NULL,
-    `description`   varchar(255)          DEFAULT NULL,
-    `created_at`    timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    `updated_at`    timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    `category_guid` varchar(255) NOT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `category_guid` (`category_guid`),
-    KEY             `idx_categories_user_id` (`user_id`)
-);
-
-CREATE TABLE `Notifications` (
-    `id`                   int          NOT NULL AUTO_INCREMENT,
-    `notification_status`  enum('UNREAD','READ','DISMISSED') NOT NULL DEFAULT 'UNREAD',
-    `notification_message` varchar(255) NOT NULL,
-    `notification_type`    enum('LOW_STOCK','EXPIRATION','TASK','SHOPPING_LIST','ERROR','OTHER','OUT_OF_STOCK') NOT NULL,
-    `created_at`           timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    `acknowledged_at`      timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP (6),
-    `product_id`           int          NOT NULL,
-    `user_id`              varchar(255) NOT NULL,
-    PRIMARY KEY (`id`),
-    KEY                    `idx_notifications_product_id` (`product_id`),
-    KEY                    `idx_notifications_user_id` (`user_id`)
-);
-
-CREATE TABLE `Product` (
-    `id`                     int          NOT NULL AUTO_INCREMENT,
-    `name`                   varchar(255) NOT NULL,
-    `default_quantity` double NOT NULL DEFAULT '1',
-    `category_id`            int          NOT NULL,
-    `description`            varchar(255)          DEFAULT NULL,
-    `brand`                  varchar(255)          DEFAULT NULL,
-    `store_link`             varchar(191)          DEFAULT NULL,
-    `current_quantity` double DEFAULT '0',
-    `unit_of_measurement`    enum('COUNT','FLUID_OUNCE','POUND','OUNCE','GRAM','KILOGRAM','LITER','MILLILITER','PIECE','PACKAGE','BOTTLE','CAN','BAG','BOX','BUNDLE','ROLL','OTHER') DEFAULT 'OTHER',
-    `expiration_date`        date                  DEFAULT NULL,
-    `location`               varchar(255)          DEFAULT NULL,
-    `gtin`                   varchar(30)           DEFAULT NULL,
-    `image`                  varchar(191)          DEFAULT NULL,
-    `search_category`        enum('FOOD','BEVERAGE','ALCOHOL','HOUSEHOLD','LAUNDRY','CLEANING','PERSONAL_CARE','BABY','PET','OTHER') DEFAULT 'FOOD',
-    `purchase_date`          date                  DEFAULT NULL,
-    `user_id`                varchar(255) NOT NULL,
-    `created_at`             timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    `updated_at`             timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    PRIMARY KEY (`id`),
-    KEY                      `idx_products_user_id` (`user_id`),
-    KEY                      `idx_products_category_id` (`category_id`)
-);
-
-CREATE TABLE `ProductQuantityChanges` (
-    `id`         int          NOT NULL AUTO_INCREMENT,
-    `old_quantity` double NOT NULL DEFAULT '0',
-    `new_quantity` double NOT NULL DEFAULT '0',
-    `cause`      enum('MANUAL','RESTOCK','TASK','SHOPPING_LIST','EXPIRATION','OTHER') NOT NULL DEFAULT 'MANUAL',
-    `createdAt`  timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    `user_id`    varchar(255) NOT NULL,
-    `product_id` int          NOT NULL,
-    PRIMARY KEY (`id`),
-    KEY          `idx_product_quantity_changes_product_id` (`product_id`),
-    KEY          `idx_product_quantity_changes_user_id` (`user_id`)
-);
-
-CREATE TABLE `ProductTasks` (
-    `id`          int          NOT NULL AUTO_INCREMENT,
-    `task`        enum('EXPIRATION','LOW_STOCK','CUSTOM') NOT NULL DEFAULT 'LOW_STOCK',
-    `add_to_list` tinyint(1) NOT NULL DEFAULT '0',
-    `created_at`  timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    `updated_at`  timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    `user_id`     varchar(255) NOT NULL,
-    `product_id`  int          NOT NULL,
-    `quantity_threshold` double DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    KEY           `idx_product_tasks_user_id` (`user_id`),
-    KEY           `idx_product_tasks_product_id` (`product_id`)
-);
-
-CREATE TABLE `QuantityScheduler` (
-    `id`                int          NOT NULL AUTO_INCREMENT,
-    `user_id`           varchar(191) NOT NULL,
-    `product_id`        int          NOT NULL,
-    `action`            enum('SET','INCREMENT','DECREMENT') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'DECREMENT',
-    `quantity_to_change` double NOT NULL DEFAULT '1',
-    `frequency`         enum('Daily','Weekly','BiWeekly','Monthly','BiMonthly','Quarterly','SemiAnnually','Annually') NOT NULL DEFAULT 'Daily',
-    `update_on`         tinyint unsigned NOT NULL DEFAULT '0',
-    `start_date`        date         NOT NULL,
-    `end_date`          date DEFAULT NULL,
-    `next_run`          date DEFAULT NULL,
-    `last_run`          date DEFAULT NULL,
-    `is_active`         tinyint(1) NOT NULL DEFAULT '1',
-    `is_admin_disabled` tinyint(1) NOT NULL DEFAULT '0',
-    `created_at`        datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP (3),
-    `updated_at`        datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP (3) ON UPDATE CURRENT_TIMESTAMP (3),
-    PRIMARY KEY (`id`),
-    KEY                 `idx_quantity_scheduler_user_id` (`user_id`),
-    KEY                 `idx_quantity_scheduler_product_id` (`product_id`),
-    KEY                 `idx_qs_optimized` (`is_active`,`is_admin_disabled`,`product_id`,`end_date`,`action`)
-);
-
-CREATE TABLE `SchedulerAudit`
+CREATE TABLE `api_products`
 (
-    `id`           int          NOT NULL AUTO_INCREMENT,
-    `user_id`      varchar(191) NOT NULL,
-    `product_id`   int          NOT NULL,
-    `scheduler_id` int          NOT NULL,
-    `action`       enum('SET','INCREMENT','DECREMENT') NOT NULL,
-    `new_quantity` double NOT NULL DEFAULT '0',
-    `old_quantity` double NOT NULL DEFAULT '0',
-    `created_at`   datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP (3),
+    `id`                  varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+    `name`                varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+    `gtin`                varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NOT NULL,
+    `default_quantity`    int                                                           NOT NULL DEFAULT '0',
+    `unit_of_measurement` enum ('COUNT','FLUID_OUNCE','POUND','OUNCE','GRAM','KILOGRAM','LITER','MILLILITER','PIECE','PACKAGE','BOTTLE','CAN','BAG','BOX','BUNDLE','ROLL','OTHER') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'OTHER',
+    `origin`              varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+    `description`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci          DEFAULT NULL,
+    `image`               varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci          DEFAULT NULL,
+    `brand`               varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci          DEFAULT NULL,
+    `store_link`          varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci          DEFAULT NULL,
+    `code_type`           varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci          DEFAULT NULL,
+    `barcode_url`         varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci          DEFAULT NULL,
+    `category`            varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci          DEFAULT NULL,
+    `upc`                 varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci           DEFAULT NULL,
+    `ean`                 varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci           DEFAULT NULL,
+    `category_path`       varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci          DEFAULT NULL,
+    `size`                varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci          DEFAULT NULL,
+    `created_at`          timestamp(6)                                                  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at`          timestamp(6)                                                  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `specs`               json                                                                   DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY                   `idx_api_products_name` (`name`),
+    KEY                   `idx_api_products_product_gtin` (`gtin`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE `categories`
+(
+    `id`            bigint       NOT NULL AUTO_INCREMENT,
+    `category_guid` binary(16) NOT NULL,
+    `created_at`    varchar(255) NOT NULL,
+    `description`   varchar(255) DEFAULT NULL,
+    `icon`          varchar(255) DEFAULT NULL,
+    `icon_color`    varchar(255) DEFAULT NULL,
+    `name`          varchar(255) DEFAULT NULL,
+    `updated_at`    varchar(255) DEFAULT NULL,
+    `user_id`       varchar(255) DEFAULT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE `notifications`
+(
+    `product_id`           int          DEFAULT NULL,
+    `id`                   bigint       NOT NULL AUTO_INCREMENT,
+    `acknowledged_at`      varchar(255) DEFAULT NULL,
+    `created_at`           varchar(255) NOT NULL,
+    `notification_message` varchar(255) DEFAULT NULL,
+    `notification_status`  varchar(255) DEFAULT NULL,
+    `notification_type`    varchar(255) DEFAULT NULL,
+    `user_id`              varchar(255) DEFAULT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE `product`
+(
+    `current_quantity` double DEFAULT NULL,
+    `default_quantity` double DEFAULT NULL,
+    `category_id`         bigint       DEFAULT NULL,
+    `id`                  bigint       NOT NULL AUTO_INCREMENT,
+    `brand`               varchar(255) DEFAULT NULL,
+    `created_at`          varchar(255) NOT NULL,
+    `description`         varchar(255) DEFAULT NULL,
+    `expiration_date`     varchar(255) DEFAULT NULL,
+    `gtin`                varchar(255) DEFAULT NULL,
+    `image`               varchar(255) DEFAULT NULL,
+    `location`            varchar(255) DEFAULT NULL,
+    `name`                varchar(255) DEFAULT NULL,
+    `purchase_date`       varchar(255) DEFAULT NULL,
+    `search_category`     varchar(255) DEFAULT NULL,
+    `store_link`          varchar(255) DEFAULT NULL,
+    `unit_of_measurement` varchar(255) DEFAULT NULL,
+    `updated_at`          varchar(255) DEFAULT NULL,
+    `user_id`             varchar(255) DEFAULT NULL,
     PRIMARY KEY (`id`)
 );
 
-CREATE TABLE `ShoppingListProducts` (
-    `id`         int          NOT NULL AUTO_INCREMENT,
-    `quantity`   int          NOT NULL DEFAULT '1',
-    `product_id` int          NOT NULL,
-    `reason`     enum('LOW_STOCK','EXPIRATION','MANUAL','OTHER','OUT_OF_STOCK') NOT NULL DEFAULT 'MANUAL',
-    `user_id`    varchar(255) NOT NULL,
-    `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    `note`       varchar(255)          DEFAULT NULL,
-    `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP (6),
-    `is_checked` tinyint(1) NOT NULL DEFAULT '0',
+CREATE TABLE `product_quantity_changes`
+(
+    `new_quantity` double DEFAULT NULL,
+    `old_quantity` double DEFAULT NULL,
+    `product_id` int          DEFAULT NULL,
+    `id`         bigint       NOT NULL AUTO_INCREMENT,
+    `cause`      varchar(255) DEFAULT NULL,
+    `created_at` varchar(255) NOT NULL,
+    `user_id`    varchar(255) DEFAULT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE `product_tasks`
+(
+    `add_to_list` int          DEFAULT NULL,
+    `product_id`  int          DEFAULT NULL,
+    `quantity_threshold` double DEFAULT NULL,
+    `id`          bigint       NOT NULL AUTO_INCREMENT,
+    `created_at`  varchar(255) NOT NULL,
+    `task`        varchar(255) DEFAULT NULL,
+    `updated_at`  varchar(255) DEFAULT NULL,
+    `user_id`     varchar(255) DEFAULT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE `quantity_scheduler`
+(
+    `id`                int          NOT NULL AUTO_INCREMENT,
+    `is_active`         bit(1)       DEFAULT NULL,
+    `is_admin_disabled` bit(1)       DEFAULT NULL,
+    `product_id`        int          DEFAULT NULL,
+    `quantity_to_change` double DEFAULT NULL,
+    `update_on`         int          DEFAULT NULL,
+    `action`            varchar(255) DEFAULT NULL,
+    `created_at`        varchar(255) NOT NULL,
+    `end_date`          varchar(255) DEFAULT NULL,
+    `frequency`         varchar(255) DEFAULT NULL,
+    `last_run`          varchar(255) DEFAULT NULL,
+    `next_run`          varchar(255) DEFAULT NULL,
+    `start_date`        varchar(255) DEFAULT NULL,
+    `updated_at`        varchar(255) DEFAULT NULL,
+    `user_id`           varchar(255) DEFAULT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE `scheduler_audit`
+(
+    `new_quantity` double DEFAULT NULL,
+    `old_quantity` double DEFAULT NULL,
+    `product_id`   int          DEFAULT NULL,
+    `scheduler_id` int          DEFAULT NULL,
+    `id`           bigint       NOT NULL AUTO_INCREMENT,
+    `action`       varchar(255) DEFAULT NULL,
+    `created_at`   varchar(255) NOT NULL,
+    `user_id`      varchar(255) DEFAULT NULL,
+    `run_id`       varchar(255) DEFAULT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE `search_history`
+(
+    `id`             int                                                           NOT NULL AUTO_INCREMENT,
+    `user_id`        varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+    `search_term`    varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+    `search_filters` json DEFAULT NULL,
+    `results`        json DEFAULT NULL,
+    `created_at`     datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP (3),
     PRIMARY KEY (`id`),
-    KEY          `idx_shopping_list_products_user_id` (`user_id`),
-    KEY          `idx_shopping_list_products_product_id` (`product_id`)
-);
+    KEY              `userId_idx` (`user_id`)
+) ENGINE = InnoDB
+  AUTO_INCREMENT = 92
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE `shopping_list_products`
+(
+    `is_checked` bit(1)       DEFAULT NULL,
+    `product_id` int          DEFAULT NULL,
+    `quantity`   int          DEFAULT NULL,
+    `id`         bigint       NOT NULL AUTO_INCREMENT,
+    `created_at` varchar(255) NOT NULL,
+    `note`       varchar(255) DEFAULT NULL,
+    `reason`     varchar(255) DEFAULT NULL,
+    `updated_at` varchar(255) DEFAULT NULL,
+    `user_id`    varchar(255) DEFAULT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+
+
+
+
 
