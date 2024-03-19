@@ -35,7 +35,6 @@ public class Category {
   @Column(name = "user_id")
   private String userId;
 
-  @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
   @Column(name = "category_guid", updatable = false, nullable = false)
   private UUID categoryGuid;
 
